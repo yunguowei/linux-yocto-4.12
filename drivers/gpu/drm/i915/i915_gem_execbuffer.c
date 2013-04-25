@@ -1805,7 +1805,9 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
 	params->dispatch_flags          = dispatch_flags;
 	params->ctx                     = ctx;
 
+#ifndef CONFIG_PREEMPT_RT_BASE
 	trace_i915_gem_request_queue(params->request, dispatch_flags);
+#endif
 
 	ret = execbuf_submit(params, args, &eb->vmas);
 err_request:
