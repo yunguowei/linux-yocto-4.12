@@ -52,6 +52,7 @@ struct imx_usbmisc_data {
 	 * and release the clock to the digital logic inside the analog block
 	 */
 	unsigned int osc_clkgate_delay;
+	enum usb_dr_mode available_role;
 	unsigned int ulpi:1; /* connected to an ULPI phy */
 };
 
