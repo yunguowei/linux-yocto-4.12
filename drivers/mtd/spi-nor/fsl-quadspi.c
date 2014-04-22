@@ -1,7 +1,7 @@
 /*
  * Freescale QuadSPI driver.
  *
- * Copyright (C) 2013 Freescale Semiconductor, Inc.
+ * Copyright (C) 2013-2015 Freescale Semiconductor, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -372,13 +372,14 @@ static void fsl_qspi_init_lut(struct fsl_qspi *q)
 {
 	void __iomem *base = q->iobase;
 	int rxfifo = q->devtype_data->rxfifo;
+	struct spi_nor *nor = &q->nor[0];
+	u8 addrlen = (nor->addr_width == 3) ? ADDR24BIT : ADDR32BIT;
 	u32 lut_base;
+	u8 op, dm;
 	int i;
 
 	struct spi_nor *nor = &q->nor[0];
 	u8 addrlen = (nor->addr_width == 3) ? ADDR24BIT : ADDR32BIT;
-	u8 read_op = nor->read_opcode;
-	u8 read_dm = nor->read_dummy;
 
 	fsl_qspi_unlock_lut(q);
 
@@ -389,11 +390,20 @@ static void fsl_qspi_init_lut(struct fsl_qspi *q)
 	/* Read */
 	lut_base = SEQID_READ * 4;
 
-	qspi_writel(q, LUT0(CMD, PAD1, read_op) | LUT1(ADDR, PAD1, addrlen),
-			base + QUADSPI_LUT(lut_base));
-	qspi_writel(q, LUT0(DUMMY, PAD1, read_dm) |
-		    LUT1(FSL_READ, PAD4, rxfifo),
-			base + QUADSPI_LUT(lut_base + 1));
+	op = nor->read_opcode;
+	dm = nor->read_dummy;
+	if (nor->flash_read == SPI_NOR_QUAD) {
+		if (op == SPINOR_OP_READ_1_1_4 || op == SPINOR_OP_READ4_1_1_4) {
+			/* read mode : 1-1-4 */
+			qspi_writel(q, LUT0(CMD, PAD1, op) | LUT1(ADDR, PAD1, addrlen),
+				    base + QUADSPI_LUT(lut_base));
+
+			qspi_writel(q, LUT0(DUMMY, PAD1, dm) | LUT1(FSL_READ, PAD4, rxfifo),
+				    base + QUADSPI_LUT(lut_base + 1));
+		} else {
+			dev_err(nor->dev, "Unsupported opcode : 0x%.2x\n", op);
+		}
+	}
 
 	/* Write enable */
 	lut_base = SEQID_WREN * 4;
@@ -404,8 +414,8 @@ static void fsl_qspi_init_lut(struct fsl_qspi *q)
 	lut_base = SEQID_PP * 4;
 
 	qspi_writel(q, LUT0(CMD, PAD1, nor->program_opcode) |
-		    LUT1(ADDR, PAD1, addrlen),
-			base + QUADSPI_LUT(lut_base));
+			LUT1(ADDR, PAD1, addrlen),
+		    base + QUADSPI_LUT(lut_base));
 	qspi_writel(q, LUT0(FSL_WRITE, PAD1, 0),
 			base + QUADSPI_LUT(lut_base + 1));
 
@@ -418,9 +428,8 @@ static void fsl_qspi_init_lut(struct fsl_qspi *q)
 	/* Erase a sector */
 	lut_base = SEQID_SE * 4;
 
-	qspi_writel(q, LUT0(CMD, PAD1, nor->erase_opcode) |
-		    LUT1(ADDR, PAD1, addrlen),
-			base + QUADSPI_LUT(lut_base));
+	qspi_writel(q, LUT0(CMD, PAD1, nor->erase_opcode) | LUT1(ADDR, PAD1, addrlen),
+		    base + QUADSPI_LUT(lut_base));
 
 	/* Erase the whole chip */
 	lut_base = SEQID_CHIP_ERASE * 4;
@@ -475,6 +484,7 @@ static int fsl_qspi_get_seqid(struct fsl_qspi *q, u8 cmd)
 		return SEQID_WRDI;
 	case SPINOR_OP_RDSR:
 		return SEQID_RDSR;
+	case SPINOR_OP_BE_4K:
 	case SPINOR_OP_SE:
 		return SEQID_SE;
 	case SPINOR_OP_CHIP_ERASE:
