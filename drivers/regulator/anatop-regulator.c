@@ -39,6 +39,7 @@
 #define LDO_FET_FULL_ON			0x1f
 
 struct anatop_regulator {
+	const char *name;
 	u32 control_reg;
 	struct regmap *anatop;
 	int vol_bit_shift;
@@ -55,6 +56,9 @@ struct anatop_regulator {
 	int sel;
 	u32 enable_bit;
 };
+
+static struct anatop_regulator *vddpu;
+static struct anatop_regulator *vddsoc;
 
 static int anatop_regmap_set_voltage_time_sel(struct regulator_dev *reg,
 	unsigned int old_sel,
@@ -86,6 +90,13 @@ static int anatop_core_regmap_enable(struct regulator_dev *reg)
 {
 	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
 	int sel;
+
+	/*
+	 * The vddpu has to stay at the same voltage level as vddsoc
+	 * whenever it's about to be enabled.
+	 */
+	if (anatop_reg == vddpu && vddsoc)
+		anatop_reg->sel = vddsoc->sel;
 
 	sel = anatop_reg->bypass ? LDO_FET_FULL_ON : anatop_reg->sel;
 	return regulator_set_voltage_sel_regmap(reg, sel);
@@ -230,8 +241,15 @@ static int anatop_regulator_probe(struct platform_device *pdev)
 	sreg = devm_kzalloc(dev, sizeof(*sreg), GFP_KERNEL);
 	if (!sreg)
 		return -ENOMEM;
+	sreg->name = of_get_property(np, "regulator-name", NULL);
+
+	if (!sreg->name) {
+		dev_err(dev, "no regulator-name set\n");
+		return -EINVAL;
+	}
 
 	rdesc = &sreg->rdesc;
+	rdesc->name = sreg->name;
 	rdesc->type = REGULATOR_VOLTAGE;
 	rdesc->owner = THIS_MODULE;
 
@@ -247,6 +265,11 @@ static int anatop_regulator_probe(struct platform_device *pdev)
 
 	initdata->supply_regulator = "vin";
 	sreg->initdata = initdata;
+
+	if (strcmp(sreg->name, "vddpu") == 0)
+		vddpu = sreg;
+	else if (strcmp(sreg->name, "vddsoc") == 0)
+		vddsoc = sreg;
 
 	anatop_np = of_get_parent(np);
 	if (!anatop_np)
@@ -341,11 +364,11 @@ static int anatop_regulator_probe(struct platform_device *pdev)
 		 * a sane default until imx6-cpufreq was probed and changes the
 		 * voltage to the correct value. In this case we set 1.25V.
 		 */
-		if (!sreg->sel && !strcmp(rdesc->name, "vddpu"))
+		if (!sreg->sel && !strcmp(sreg->name, "vddpu"))
 			sreg->sel = 22;
 
 		/* set the default voltage of the pcie phy to be 1.100v */
-		if (!sreg->sel && !strcmp(rdesc->name, "vddpcie"))
+		if (!sreg->sel && !strcmp(sreg->name, "vddpcie-phy"))
 			sreg->sel = 0x10;
 
 		if (!sreg->bypass && !sreg->sel) {
