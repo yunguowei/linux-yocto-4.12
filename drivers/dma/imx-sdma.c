@@ -705,6 +705,12 @@ static void sdma_update_channel_loop(struct sdma_channel *sdmac)
 		sdmac->buf_ptail = sdmac->buf_tail;
 		sdmac->buf_tail = (sdmac->buf_tail + 1) % sdmac->num_bd;
 
+		if (sdmac->peripheral_type == IMX_DMATYPE_UART) {
+			/* restore mode.count after counter readed */
+			sdmac->chn_real_count = bd->mode.count;
+			bd->mode.count = sdmac->chn_count;
+		}
+
 		/*
 		 * The callback is called from the interrupt context in order
 		 * to reduce latency and to avoid the risk of altering the
@@ -1327,6 +1333,9 @@ static struct dma_async_tx_descriptor *sdma_prep_dma_cyclic(
 				channel, period_len, 0xffff);
 		goto err_out;
 	}
+
+	if (sdmac->peripheral_type == IMX_DMATYPE_UART)
+		sdmac->chn_count = period_len;
 
 	while (buf < buf_len) {
 		struct sdma_buffer_descriptor *bd = &sdmac->bd[i];
