@@ -947,7 +947,7 @@ int caam_sm_startup(struct platform_device *pdev)
 	struct caam_drv_private *ctrlpriv;
 	struct caam_drv_private_sm *smpriv;
 	struct caam_drv_private_jr *jrpriv;	/* need this for reg page */
-	struct platform_device *sm_pdev;
+	struct platform_device *sm_pdev, *ring0_pdev;
 	struct sm_page_descriptor *lpagedesc;
 	u32 page, pgstat, lpagect, detectedpage;
 
@@ -1018,7 +1018,14 @@ int caam_sm_startup(struct platform_device *pdev)
 	 * we can divorce the controller and ring drivers, and then assign
 	 * an SM instance to any ring instance).
 	 */
-	smpriv->smringdev = caam_jr_alloc();
+	np = of_get_next_child(ctrlpriv->pdev->dev.of_node, NULL);
+	if (!np) {
+		dev_err(ctrldev, "can not find job ring 0 device\n");
+		return -EINVAL;
+	}
+	ring0_pdev = of_find_device_by_node(np);
+	smpriv->smringdev = &ring0_pdev->dev;
+
 	jrpriv = dev_get_drvdata(smpriv->smringdev);
 	lpagect = 0;
 	lpagedesc = kzalloc(sizeof(struct sm_page_descriptor)
