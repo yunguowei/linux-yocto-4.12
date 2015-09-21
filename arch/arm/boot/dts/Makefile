@@ -456,10 +456,14 @@ dtb-$(CONFIG_SOC_IMX6Q) += \
 dtb-$(CONFIG_SOC_IMX6SL) += \
 	imx6sl-evk.dtb \
 	imx6sl-evk-ldo.dtb \
+	imx6sl-evk-csi.dtb \
 	imx6sl-evk-uart.dtb \
 	imx6sl-warp.dtb
 dtb-$(CONFIG_SOC_IMX6SX) += \
 	imx6sx-nitrogen6sx.dtb \
+	imx6sx-udoo-neo-basic.dtb \
+	imx6sx-udoo-neo-extended.dtb \
+	imx6sx-udoo-neo-full.dtb \
 	imx6sx-14x14-arm2.dtb \
 	imx6sx-sabreauto.dtb \
 	imx6sx-sdb-reva.dtb \
@@ -468,11 +472,9 @@ dtb-$(CONFIG_SOC_IMX6SX) += \
 	imx6sx-sdb.dtb	\
 	imx6sx-sdb-ldo.dtb	\
 	imx6sx-sdb-sai.dtb \
-	imx6sx-udoo-neo-basic.dtb \
-	imx6sx-udoo-neo-extended.dtb \
-	imx6sx-udoo-neo-full.dtb
 	imx6sx-19x19-arm2.dtb \
-	imx6sx-19x19-arm2-ldo.dtb
+	imx6sx-19x19-arm2-ldo.dtb \
+	imx6sx-19x19-arm2-csi.dtb
 dtb-$(CONFIG_SOC_IMX6UL) += \
 	imx6ul-14x14-evk.dtb \
 	imx6ul-geam-kit.dtb \
@@ -492,6 +494,7 @@ dtb-$(CONFIG_SOC_IMX6UL) += \
 	imx6ul-14x14-ddr3-arm2-wm8958.dtb \
 	imx6ul-14x14-lpddr2-arm2.dtb \
 	imx6ul-9x9-evk.dtb \
+	imx6ul-9x9-evk-csi.dtb \
 	imx6ul-9x9-evk-ldo.dtb
 dtb-$(CONFIG_SOC_IMX7D) += \
 	imx7d-cl-som-imx7.dtb \
