@@ -376,6 +376,7 @@ dtb-$(CONFIG_SOC_IMX6Q) += \
 	imx6dl-sabreauto.dtb \
 	imx6dl-sabrelite.dtb \
 	imx6dl-sabresd.dtb \
+	imx6dl-sabresd-hdcp.dtb \
 	imx6dl-sabresd-ldo.dtb \
 	imx6dl-savageboard.dtb \
 	imx6dl-ts4900.dtb \
@@ -429,6 +430,7 @@ dtb-$(CONFIG_SOC_IMX6Q) += \
 	imx6q-sabreauto.dtb \
 	imx6qp-sabreauto.dtb \
 	imx6q-sabresd.dtb \
+	imx6q-sabresd-hdcp.dtb \
 	imx6q-sabrelite.dtb \
 	imx6q-sabresd-uart.dtb \
 	imx6q-sabresd-enetirq.dtb \
