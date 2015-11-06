@@ -474,6 +474,7 @@ dtb-$(CONFIG_SOC_IMX6SX) += \
 	imx6sx-udoo-neo-full.dtb \
 	imx6sx-14x14-arm2.dtb \
 	imx6sx-sabreauto.dtb \
+	imx6sx-sabreauto-m4.dtb \
 	imx6sx-sdb-reva.dtb \
 	imx6sx-sdb-sai.dtb \
 	imx6sx-sdb-reva-ldo.dtb \
@@ -481,6 +482,7 @@ dtb-$(CONFIG_SOC_IMX6SX) += \
 	imx6sx-sdb-btwifi.dtb \
 	imx6sx-sdb-lcdif1.dtb \
 	imx6sx-sdb-ldo.dtb	\
+	imx6sx-sdb-m4.dtb \
 	imx6sx-sdb-mqs.dtb \
 	imx6sx-sdb-sai.dtb \
 	imx6sx-19x19-arm2.dtb \
