@@ -292,6 +292,7 @@ struct flexcan_priv {
 
 	struct clk *clk_ipg;
 	struct clk *clk_per;
+	struct flexcan_platform_data *pdata;
 	const struct flexcan_devtype_data *devtype_data;
 	struct regulator *reg_xceiver;
 	int id;
@@ -905,7 +906,7 @@ static int flexcan_chip_start(struct net_device *dev)
 		FLEXCAN_MCR_SUPV | FLEXCAN_MCR_WRN_EN |
 		FLEXCAN_MCR_IDAM_C | FLEXCAN_MCR_SRX_DIS |
 		FLEXCAN_MCR_WAK_MSK | FLEXCAN_MCR_SLF_WAK |
-		FLEXCAN_MCR_MAXMB(FLEXCAN_TX_BUF_ID);
+		FLEXCAN_MCR_MAXMB(FLEXCAN_TX_MB_OFF_FIFO);
 
 	if (priv->devtype_data->quirks & FLEXCAN_QUIRK_USE_OFF_TIMESTAMP) {
 		reg_mcr &= ~FLEXCAN_MCR_FEN;
@@ -1363,6 +1364,7 @@ static int flexcan_probe(struct platform_device *pdev)
 	priv->regs = regs;
 	priv->clk_ipg = clk_ipg;
 	priv->clk_per = clk_per;
+	priv->pdata = dev_get_platdata(&pdev->dev);
 	priv->devtype_data = devtype_data;
 	priv->reg_xceiver = reg_xceiver;
 
@@ -1445,7 +1447,6 @@ static int __maybe_unused flexcan_suspend(struct device *device)
 {
 	struct net_device *dev = dev_get_drvdata(device);
 	struct flexcan_priv *priv = netdev_priv(dev);
-	int err = 0;
 
 	if (netif_running(dev)) {
 		netif_stop_queue(dev);
@@ -1458,12 +1459,14 @@ static int __maybe_unused flexcan_suspend(struct device *device)
 			enable_irq_wake(dev->irq);
 			flexcan_enter_stop_mode(priv);
 		} else {
-			err = flexcan_chip_disable(priv);
+			flexcan_chip_stop(dev);
 		}
 	}
 	priv->can.state = CAN_STATE_SLEEPING;
 
-	return err;
+	pinctrl_pm_select_sleep_state(device);
+
+	return 0;
 }
 
 static int __maybe_unused flexcan_resume(struct device *device)
@@ -1471,6 +1474,8 @@ static int __maybe_unused flexcan_resume(struct device *device)
 	struct net_device *dev = dev_get_drvdata(device);
 	struct flexcan_priv *priv = netdev_priv(dev);
 	int err = 0;
+
+	pinctrl_pm_select_default_state(device);
 
 	priv->can.state = CAN_STATE_ERROR_ACTIVE;
 	if (netif_running(dev)) {
@@ -1480,9 +1485,9 @@ static int __maybe_unused flexcan_resume(struct device *device)
 		if (device_may_wakeup(device)) {
 			disable_irq_wake(dev->irq);
 			flexcan_exit_stop_mode(priv);
-		} else {
-			err = flexcan_chip_enable(priv);
 		}
+
+		err = flexcan_chip_start(dev);
 	}
 
 	return err;
