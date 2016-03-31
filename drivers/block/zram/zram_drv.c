@@ -422,6 +422,7 @@ static DEVICE_ATTR_RO(io_stat);
 static DEVICE_ATTR_RO(mm_stat);
 static DEVICE_ATTR_RO(debug_stat);
 
+#ifndef CONFIG_PREEMPT_RT_BASE
 static void zram_slot_lock(struct zram *zram, u32 index)
 {
 	bit_spin_lock(ZRAM_ACCESS, &zram->table[index].value);
@@ -431,6 +432,19 @@ static void zram_slot_unlock(struct zram *zram, u32 index)
 {
 	bit_spin_unlock(ZRAM_ACCESS, &zram->table[index].value);
 }
+#else /* CONFIG_PREEMPT_RT_BASE */
+static void zram_slot_lock(struct zram *zram, u32 index)
+{
+	spin_lock(&zram->table[index].lock);
+	__set_bit(ZRAM_ACCESS, &zram->table[index].value);
+}
+
+static void zram_slot_unlock(struct zram *zram, u32 index)
+{
+	__clear_bit(ZRAM_ACCESS, &zram->table[index].value);
+	spin_unlock(&zram->table[index].lock);
+}
+#endif /* CONFIG_PREEMPT_RT_BASE */
 
 static bool zram_same_page_read(struct zram *zram, u32 index,
 				struct page *page,
@@ -503,6 +517,8 @@ static bool zram_meta_alloc(struct zram *zram, u64 disksize)
 		vfree(zram->table);
 		return false;
 	}
+
+	zram_meta_init_table_locks(zram, disksize);
 
 	return true;
 }
