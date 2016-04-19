@@ -517,13 +517,14 @@ dtb-$(CONFIG_SOC_IMX6UL) += \
 	imx6ul-14x14-ddr3-arm2-spdif.dtb \
 	imx6ul-14x14-ddr3-arm2-wm8958.dtb \
 	imx6ul-14x14-lpddr2-arm2.dtb \
+	imx6ul-14x14-evk-usb-certi.dtb \
 	imx6ul-9x9-evk.dtb \
 	imx6ul-9x9-evk-btwifi.dtb \
 	imx6ul-9x9-evk-csi.dtb \
-	imx6ul-14x14-evk-usb-certi.dtb \
 	imx6ul-9x9-evk-ldo.dtb
 dtb-$(CONFIG_SOC_IMX6ULL) += \
-	imx6ull-ddr3-arm2.dtb
+	imx6ull-ddr3-arm2.dtb \
+	imx6ull-ddr3-arm2-lcdif.dtb
 dtb-$(CONFIG_SOC_IMX7D) += \
 	imx7d-cl-som-imx7.dtb \
 	imx7d-colibri-eval-v3.dtb \
