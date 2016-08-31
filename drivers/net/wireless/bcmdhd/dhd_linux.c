@@ -22,7 +22,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: dhd_linux.c 615742 2016-01-28 12:53:11Z $
+ * $Id: dhd_linux.c 634247 2016-04-27 05:53:55Z $
  */
 
 #include <typedefs.h>
@@ -57,6 +57,7 @@
 #include <bcmutils.h>
 #include <bcmendian.h>
 #include <bcmdevs.h>
+#include <uapi/linux/sched/types.h>
 
 #include <proto/ethernet.h>
 #include <proto/bcmevent.h>
@@ -176,6 +177,11 @@ static bool dhd_inet6addr_notifier_registered = FALSE;
 volatile bool dhd_mmc_suspend = FALSE;
 DECLARE_WAIT_QUEUE_HEAD(dhd_dpc_wait);
 #endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)) && defined(CONFIG_PM_SLEEP) */
+
+#if defined(OOB_PARAM)
+uint dhd_oob_disable = FALSE;
+module_param(dhd_oob_disable, uint, 0);
+#endif /* OOB_PARAM */
 
 #if defined(OOB_INTR_ONLY)
 extern void dhd_enable_oob_intr(struct dhd_bus *bus, bool enable);
@@ -638,7 +644,7 @@ static int dhd_toe_get(dhd_info_t *dhd, int idx, uint32 *toe_ol);
 static int dhd_toe_set(dhd_info_t *dhd, int idx, uint32 toe_ol);
 #endif /* TOE */
 
-static int dhd_wl_host_event(dhd_info_t *dhd, int *ifidx, void *pktdata,
+static int dhd_wl_host_event(dhd_info_t *dhd, int *ifidx, void *pktdata, uint16 pktlen,
                              wl_event_msg_t *event_ptr, void **data_ptr);
 #if defined(SUPPORT_P2P_GO_PS)
 #ifdef PROP_TXSTATUS
@@ -2103,6 +2109,7 @@ dhd_rx_frame(dhd_pub_t *dhdp, int ifidx, void *pktbuf, int numpkt, uint8 chan)
 #else
 			skb->mac.raw,
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 22) */
+			len - ETHER_TYPE_LEN,
 			&event,
 			&data);
 
@@ -2131,9 +2138,6 @@ dhd_rx_frame(dhd_pub_t *dhdp, int ifidx, void *pktbuf, int numpkt, uint8 chan)
 
 		ASSERT(ifidx < DHD_MAX_IFS && dhd->iflist[ifidx]);
 		ifp = dhd->iflist[ifidx];
-
-		if (ifp->net)
-			ifp->net->last_rx = jiffies;
 
 		if (ntoh16(skb->protocol) != ETHER_TYPE_BRCM) {
 			dhdp->dstats.rx_bytes += skb->len;
@@ -3521,14 +3525,7 @@ dhd_allocate_if(dhd_pub_t *dhdpub, int ifidx, char *name,
 		strncpy(ifp->net->name, name, IFNAMSIZ);
 		ifp->net->name[IFNAMSIZ - 1] = '\0';
 	}
-#ifdef WL_CFG80211
-	if (ifidx == 0)
-		ifp->net->destructor = free_netdev;
-	else
-		ifp->net->destructor = dhd_netdev_free;
-#else
-	ifp->net->destructor = free_netdev;
-#endif /* WL_CFG80211 */
+
 	strncpy(ifp->name, ifp->net->name, IFNAMSIZ);
 	ifp->name[IFNAMSIZ - 1] = '\0';
 	dhdinfo->iflist[ifidx] = ifp;
@@ -4425,23 +4422,25 @@ dhd_bus_start(dhd_pub_t *dhdp)
 		return ret;
 	}
 #if defined(OOB_INTR_ONLY)
-	/* Host registration for OOB interrupt */
-	if (dhd_bus_oob_intr_register(dhdp)) {
-		/* deactivate timer and wait for the handler to finish */
+	OOB_PARAM_IF(!dhd_oob_disable) {
+		/* Host registration for OOB interrupt */
+		if (dhd_bus_oob_intr_register(dhdp)) {
+			/* deactivate timer and wait for the handler to finish */
 
-		flags = dhd_os_spin_lock(&dhd->pub);
-		dhd->wd_timer_valid = FALSE;
-		dhd_os_spin_unlock(&dhd->pub, flags);
-		del_timer_sync(&dhd->timer);
+			flags = dhd_os_spin_lock(&dhd->pub);
+			dhd->wd_timer_valid = FALSE;
+			dhd_os_spin_unlock(&dhd->pub, flags);
+			del_timer_sync(&dhd->timer);
 
-		DHD_ERROR(("%s Host failed to register for OOB\n", __FUNCTION__));
-		dhd_os_sdunlock(dhdp);
-		DHD_OS_WD_WAKE_UNLOCK(&dhd->pub);
-		return -ENODEV;
+			DHD_ERROR(("%s Host failed to register for OOB\n", __FUNCTION__));
+			dhd_os_sdunlock(dhdp);
+			DHD_OS_WD_WAKE_UNLOCK(&dhd->pub);
+			return -ENODEV;
+		}
+
+		/* Enable oob at firmware */
+		dhd_enable_oob_intr(dhd->pub.bus, TRUE);
 	}
-
-	/* Enable oob at firmware */
-	dhd_enable_oob_intr(dhd->pub.bus, TRUE);
 #endif 
 
 	/* If bus is not ready, can't come up */
@@ -5737,7 +5736,9 @@ dhd_bus_detach(dhd_pub_t *dhdp)
 			}
 
 #if defined(OOB_INTR_ONLY)
-			dhd_bus_oob_intr_unregister(dhdp);
+			OOB_PARAM_IF(!dhd_oob_disable) {
+				dhd_bus_oob_intr_unregister(dhdp);
+			}
 #endif 
 		}
 	}
@@ -6327,16 +6328,16 @@ dhd_get_wireless_stats(struct net_device *dev)
 #endif /* defined(WL_WIRELESS_EXT) */
 
 static int
-dhd_wl_host_event(dhd_info_t *dhd, int *ifidx, void *pktdata,
+dhd_wl_host_event(dhd_info_t *dhd, int *ifidx, void *pktdata, uint16 pktlen,
 	wl_event_msg_t *event, void **data)
 {
 	int bcmerror = 0;
 	ASSERT(dhd != NULL);
 
 #ifdef SHOW_LOGTRACE
-	bcmerror = wl_host_event(&dhd->pub, ifidx, pktdata, event, data, &dhd->event_data);
+	bcmerror = wl_host_event(&dhd->pub, ifidx, pktdata,  pktlen, event, data, &dhd->event_data);
 #else
-	bcmerror = wl_host_event(&dhd->pub, ifidx, pktdata, event, data, NULL);
+	bcmerror = wl_host_event(&dhd->pub, ifidx, pktdata,  pktlen, event, data, NULL);
 #endif /* SHOW_LOGTRACE */
 
 	if (bcmerror != BCME_OK)
