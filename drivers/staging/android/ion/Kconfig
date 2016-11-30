@@ -42,3 +42,11 @@ config ION_CMA_HEAP
 	  Choose this option to enable CMA heaps with Ion. This heap is backed
 	  by the Contiguous Memory Allocator (CMA). If your system has these
 	  regions, you should say Y here.
+
+config ION_MXC
+	tristate "Ion for imx platform"
+	depends on ION
+	select VIDEOBUF2_DMA_CONTIG
+	help
+	  Choose this option if you wish to use ion on imx platform.
+

@@ -1,7 +1,7 @@
 /*
  * drivers/staging/android/ion/ion.h
  *
- * Copyright (C) 2011 Google, Inc.
+ * Copyright (C) 2016 Freescale Semiconductor, Inc.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -371,5 +371,10 @@ int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
 long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
 
 int ion_query_heaps(struct ion_heap_query *query);
+
+int ion_handle_put_wrap(struct ion_handle *handle);
+struct ion_handle *ion_handle_get_by_id_wrap(struct ion_client *client,
+					       int id);
+struct device *ion_device_get_by_client(struct ion_client *client);
 
 #endif /* _ION_H */
