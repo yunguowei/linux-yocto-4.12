@@ -66,7 +66,10 @@ static int high_bus_count, med_bus_count, audio_bus_count, low_bus_count;
 static unsigned int ddr_low_rate;
 static int cur_bus_freq_mode;
 static u32 org_arm_rate;
+#ifdef CONFIG_SOC_IMX6
 static int origin_arm_volt, origin_soc_volt;
+static struct clk *origin_step_parent;
+#endif
 
 extern unsigned long iram_tlb_phys_addr;
 extern int unsigned long iram_tlb_base_addr;
@@ -159,8 +162,6 @@ int unregister_busfreq_notifier(struct notifier_block *nb)
 	return raw_notifier_chain_unregister(&busfreq_notifier_chain, nb);
 }
 EXPORT_SYMBOL(unregister_busfreq_notifier);
-
-static struct clk *origin_step_parent;
 
 /*
  * on i.MX6ULL, when entering low bus mode, the ARM core
@@ -1155,11 +1156,12 @@ static int busfreq_probe(struct platform_device *pdev)
 		}
 	}
 
-	if (cpu_is_imx6q())
+	if (cpu_is_imx6q()) {
 		mmdc_clk = devm_clk_get(&pdev->dev, "mmdc");
 		if (IS_ERR(mmdc_clk)) {
 			mmdc_clk = NULL;
 		}
+	}
 
 	if (cpu_is_imx6sx()) {
 		m4_clk = devm_clk_get(&pdev->dev, "m4");
