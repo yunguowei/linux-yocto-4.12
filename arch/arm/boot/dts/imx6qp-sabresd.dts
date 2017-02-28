@@ -88,10 +88,6 @@
 	};
 };
 
-&pcie {
-	status = "disabled";
-};
-
 &reg_arm {
 	vin-supply = <&sw2_reg>;
 };
