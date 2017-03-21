@@ -2354,6 +2354,9 @@ static int imx_serial_port_resume_noirq(struct device *dev)
 
 	/* disable wakeup from i.MX UART */
 	serial_imx_enable_wakeup(sport, false);
+	val = readl(sport->port.membase + USR1);
+	if (val & (USR1_AWAKE | USR1_RTSD))
+		writel(USR1_AWAKE | USR1_RTSD, sport->port.membase + USR1);
 
 	clk_disable(sport->clk_ipg);
 
