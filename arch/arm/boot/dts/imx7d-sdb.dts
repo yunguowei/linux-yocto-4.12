@@ -639,6 +639,7 @@
 };
 
 &sdma {
+	iram = <&ocram>;
 	status = "okay";
 };
 
