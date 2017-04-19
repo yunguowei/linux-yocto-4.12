@@ -950,7 +950,7 @@ static void ablkcipher_decrypt_done(struct device *jrdev, u32 *desc, u32 err,
 	kfree(edesc);
 
 	/* Pass IV along for cbc */
-	if ((ctx->class1_alg_type & OP_ALG_AAI_MASK) == OP_ALG_AAI_CBC) {
+	if ((ctx->cdata.algtype & OP_ALG_AAI_MASK) == OP_ALG_AAI_CBC) {
 		scatterwalk_map_and_copy(req->info, req->dst,
 					 req->nbytes - bsize, ivcopy, 0);
 	}
@@ -1499,6 +1499,7 @@ static struct ablkcipher_edesc *ablkcipher_edesc_alloc(struct ablkcipher_request
 	bool in_contig;
 	int ivsize = crypto_ablkcipher_ivsize(ablkcipher);
 	int dst_sg_idx, sec4_sg_ents, sec4_sg_bytes;
+	uint32_t c1_alg_typ = ctx->cdata.algtype;
 
 	src_nents = sg_nents_for_len(req->src, req->nbytes);
 	if (unlikely(src_nents < 0)) {
