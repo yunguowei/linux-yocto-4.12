@@ -4,6 +4,7 @@
  * Based on imx-sgtl5000.c
  * Copyright (C) 2012 Freescale Semiconductor, Inc.
  * Copyright (C) 2012 Linaro Ltd.
+ * Copyright 2017 NXP
  *
  * The code contained herein is licensed under the GNU General Public
  * License. You may obtain a copy of the GNU General Public License
@@ -60,6 +61,7 @@ struct imx_priv {
 	int sample_rate;
 	snd_pcm_format_t sample_format;
 };
+static struct imx_priv card_priv;
 
 #ifdef CONFIG_SND_SOC_IMX_WM8962_ANDROID
 static int sample_rate = 44100;
@@ -263,7 +265,8 @@ static int imx_wm8962_set_bias_level(struct snd_soc_card *card,
 	switch (level) {
 	case SND_SOC_BIAS_PREPARE:
 		if (dapm->bias_level == SND_SOC_BIAS_STANDBY) {
-			if (sample_format == SNDRV_PCM_FORMAT_S24_LE)
+			if (sample_format == SNDRV_PCM_FORMAT_S24_LE
+				|| sample_format == SNDRV_PCM_FORMAT_S20_3LE)
 				pll_out = sample_rate * 384;
 			else
 				pll_out = sample_rate * 256;
@@ -323,6 +326,8 @@ static int imx_hifi_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
 	struct imx_priv *priv = &card_priv;
 	struct device *dev = &priv->pdev->dev;
+	struct snd_soc_card *card = platform_get_drvdata(priv->pdev);
+	struct imx_wm8962_data *data = snd_soc_card_get_drvdata(card);
 	unsigned int sample_rate = params_rate(params);
 	snd_pcm_format_t sample_format = params_format(params);
 	u32 dai_format, pll_out;
@@ -351,7 +356,8 @@ static int imx_hifi_hw_params(struct snd_pcm_substream *substream,
 		return ret;
 	}
 
-	if (sample_format == SNDRV_PCM_FORMAT_S24_LE)
+	if (sample_format == SNDRV_PCM_FORMAT_S24_LE
+		|| sample_format == SNDRV_PCM_FORMAT_S20_3LE)
 		pll_out = sample_rate * 384;
 	else
 		pll_out = sample_rate * 256;
@@ -377,9 +383,7 @@ static int imx_hifi_hw_free(struct snd_pcm_substream *substream)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
-	struct imx_priv *priv = snd_soc_card_get_drvdata(card);
-	struct snd_soc_card *card = platform_get_drvdata(priv->pdev);
-	struct imx_wm8962_data *data = snd_soc_card_get_drvdata(card);
+	struct imx_priv *priv = &card_priv;
 	struct device *dev = &priv->pdev->dev;
 	int ret;
 
@@ -521,7 +525,7 @@ static int imx_wm8962_late_probe(struct snd_soc_card *card)
 {
 	struct snd_soc_pcm_runtime *rtd;
 	struct snd_soc_dai *codec_dai;
-	struct imx_priv *priv = snd_soc_card_get_drvdata(card);
+	struct imx_priv *priv = &card_priv;
 	struct imx_wm8962_data *data = snd_soc_card_get_drvdata(card);
 	struct device *dev = &priv->pdev->dev;
 	int ret;
@@ -561,18 +565,14 @@ static int imx_wm8962_probe(struct platform_device *pdev)
 	struct device_node *cpu_np, *codec_np = NULL;
 	struct platform_device *cpu_pdev;
 	struct i2c_client *codec_dev;
+	struct imx_priv *priv = &card_priv;
 	struct imx_wm8962_data *data;
-	struct imx_priv *priv;
 	struct clk *codec_clk;
 	int int_port, ext_port, tmp_port;
 	int ret;
 	struct platform_device *asrc_pdev = NULL;
 	struct device_node *asrc_np;
 	u32 width;
-
-	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
-	if (!priv)
-		return -ENOMEM;
 
 	priv->pdev = pdev;
 	priv->sample_rate = 44100;
