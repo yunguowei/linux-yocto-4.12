@@ -1469,6 +1469,11 @@ static int imx6_pcie_probe(struct platform_device *pdev)
 		LIST_HEAD(res);
 		struct resource_entry *win, *tmp;
 
+		/* add attributes for device */
+		ret = sysfs_create_group(&pdev->dev.kobj, &imx_pcie_attrgroup);
+		if (ret)
+			return -EINVAL;
+
 		ret = of_pci_get_host_bridge_resources(np, 0, 0xff, &res,
 						       &pp->io_base);
 		if (ret)
