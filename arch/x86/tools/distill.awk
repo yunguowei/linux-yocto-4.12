@@ -1,4 +1,4 @@
-#!/bin/awk -f
+#!/usr/bin/awk -f
 # Usage: objdump -d a.out | awk -f distill.awk | ./test_get_len
 # Distills the disassembly as follows:
 # - Removes all lines except the disassembled instructions.

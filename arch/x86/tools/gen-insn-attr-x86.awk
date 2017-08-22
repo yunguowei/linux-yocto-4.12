@@ -1,4 +1,4 @@
-#!/bin/awk -f
+#!/usr/bin/awk -f
 # gen-insn-attr-x86.awk: Instruction attribute table generator
 # Written by Masami Hiramatsu <mhiramat@redhat.com>
 #
