@@ -218,21 +218,21 @@ static struct cpuidle_driver imx7d_cpuidle_driver = {
 };
 
 #ifdef CONFIG_HOTPLUG_CPU
-static int cpu_hotplug_notify(struct notifier_block *self,
-				  unsigned long action, void *hcpu)
+static int imx7d_cpu_hotplug(unsigned int cpu)
 {
-	switch (action) {
-	case CPU_DEAD:
-	case CPU_ONLINE:
-		cpuidle_pm_info->num_online_cpus = num_online_cpus();
-		break;
-	}
-	return NOTIFY_OK;
+	cpuidle_pm_info->num_online_cpus = num_online_cpus();
+	return 0;
 }
 
-static struct notifier_block __refdata cpu_hotplug_notifier = {
-	.notifier_call = cpu_hotplug_notify,
-};
+static void __init imx7d_hotplug_init(void)
+{
+	cpuhp_setup_state_nocalls(CPUHP_AP_ONLINE_DYN, 
+			      "staging/lustre/cfe:online",
+				  imx7d_cpu_hotplug, NULL);
+	cpuhp_setup_state_nocalls(CPUHP_LUSTRE_CFS_DEAD,
+				  "staging/lustre/cfe:dead", NULL,
+				  imx7d_cpu_hotplug);
+}
 #endif
 
 int imx7d_enable_rcosc(void)
@@ -344,7 +344,7 @@ int __init imx7d_cpuidle_init(void)
 	imx7d_enable_rcosc();
 
 #ifdef CONFIG_HOTPLUG_CPU
-	register_hotcpu_notifier(&cpu_hotplug_notifier);
+	imx7d_hotplug_init();
 #endif
 	/* code size should include cpuidle_pm_info size */
 	imx7d_wfi_in_iram_fn = (void *)fncpy(wfi_iram_base +
