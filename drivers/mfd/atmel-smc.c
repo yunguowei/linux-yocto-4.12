@@ -11,6 +11,7 @@
  * published by the Free Software Foundation.
  */
 
+#include <linux/string.h>
 #include <linux/mfd/syscon/atmel-smc.h>
 
 /**
