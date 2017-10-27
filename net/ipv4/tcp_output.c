@@ -2199,6 +2199,7 @@ static bool tcp_write_xmit(struct sock *sk, unsigned int mss_now, int nonagle,
 
 	sent_pkts = 0;
 
+	skb_mstamp_get(&tp->tcp_mstamp);
 	if (!push_one) {
 		/* Do MTU probing. */
 		result = tcp_mtu_probe(sk);
@@ -2210,7 +2211,6 @@ static bool tcp_write_xmit(struct sock *sk, unsigned int mss_now, int nonagle,
 	}
 
 	max_segs = tcp_tso_segs(sk, mss_now);
-	skb_mstamp_get(&tp->tcp_mstamp);
 	while ((skb = tcp_send_head(sk))) {
 		unsigned int limit;
 
