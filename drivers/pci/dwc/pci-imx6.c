@@ -336,8 +336,17 @@ static void imx6_pcie_assert_core_reset(struct imx6_pcie *imx6_pcie)
 {
 	switch (imx6_pcie->variant) {
 	case IMX7D:
-		reset_control_assert(imx6_pcie->pciephy_reset);
-		reset_control_assert(imx6_pcie->apps_reset);
+
+		if (imx6_pcie->pciephy_reset)
+			reset_control_assert(imx6_pcie->pciephy_reset);
+		else
+			regmap_update_bits(imx6_pcie->reg_src, 0x2c, BIT(1), BIT(1));
+
+		if (imx6_pcie->apps_reset)
+			reset_control_assert(imx6_pcie->apps_reset);
+		else
+			regmap_update_bits(imx6_pcie->reg_src, 0x2c, BIT(2), BIT(2));
+
 		break;
 	case IMX6SX:
 		regmap_update_bits(imx6_pcie->iomuxc_gpr, IOMUXC_GPR12,
@@ -1339,15 +1348,16 @@ static int imx6_pcie_probe(struct platform_device *pdev)
 		imx6_pcie->pciephy_reset = devm_reset_control_get(dev,
 								  "pciephy");
 		if (IS_ERR(imx6_pcie->pciephy_reset)) {
-			dev_err(dev, "Failed to get PCIEPHY reset control\n");
-			return PTR_ERR(imx6_pcie->pciephy_reset);
+			dev_info(dev, "not get PCIEPHY reset control\n");
+			imx6_pcie->pciephy_reset = NULL;
 		}
 
 		imx6_pcie->apps_reset = devm_reset_control_get(dev, "apps");
 		if (IS_ERR(imx6_pcie->apps_reset)) {
-			dev_err(dev, "Failed to get PCIE APPS reset control\n");
-			return PTR_ERR(imx6_pcie->apps_reset);
+			dev_info(dev, "not get PCIE APPS reset control\n");
+			imx6_pcie->apps_reset = NULL;
 		}
+
 		break;
 	default:
 		break;
