@@ -1589,11 +1589,12 @@ static int imx6_pcie_probe(struct platform_device *pdev)
 			pr_info("pcie ep: Data transfer is failed.\n");
 		} /* end of self io test. */
 	} else {
+
+		platform_set_drvdata(pdev, imx6_pcie);
+
 		ret = imx6_add_pcie_port(imx6_pcie, pdev);
 		if (ret < 0)
 			return ret;
-
-		platform_set_drvdata(pdev, imx6_pcie);
 
 		if (IS_ENABLED(CONFIG_RC_MODE_IN_EP_RC_SYS))
 			imx_pcie_regions_setup(&pdev->dev);
