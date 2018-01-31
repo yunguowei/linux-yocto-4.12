@@ -21,6 +21,7 @@
 
 	aliases {
 		serial0 = &uart0;
+		i2c1 = &i2c1;
 	};
 
 	chosen {
