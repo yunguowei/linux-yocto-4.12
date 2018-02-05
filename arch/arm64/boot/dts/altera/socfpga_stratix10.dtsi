@@ -20,6 +20,7 @@
 
 / {
 	compatible = "altr,socfpga-stratix10";
+	interrupt-parent = <&intc>;
 	#address-cells = <2>;
 	#size-cells = <2>;
 
