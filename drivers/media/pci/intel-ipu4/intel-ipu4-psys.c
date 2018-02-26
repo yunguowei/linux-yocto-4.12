@@ -26,6 +26,7 @@
 #include <linux/pm_runtime.h>
 #include <linux/poll.h>
 #include <linux/sched.h>
+#include <linux/sched/types.h>
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
 
@@ -508,8 +509,13 @@ static struct dma_buf_ops intel_ipu4_dma_buf_ops = {
 	.unmap_dma_buf = intel_ipu4_dma_buf_unmap,
 	.release = intel_ipu4_dma_buf_release,
 	.begin_cpu_access = intel_ipu4_dma_buf_begin_cpu_access,
+#if  LINUX_VERSION_CODE >=  KERNEL_VERSION(4, 11, 0)
+       .map = intel_ipu4_dma_buf_kmap,
+       .map_atomic = intel_ipu4_dma_buf_kmap_atomic,
+#else
 	.kmap = intel_ipu4_dma_buf_kmap,
 	.kmap_atomic = intel_ipu4_dma_buf_kmap_atomic,
+#endif
 	.mmap = intel_ipu4_dma_buf_mmap,
 	.vmap = intel_ipu4_dma_buf_vmap,
 	.vunmap = intel_ipu4_dma_buf_vunmap,

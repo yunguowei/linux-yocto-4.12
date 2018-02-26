@@ -1060,7 +1060,7 @@ static int isys_register_devices(struct intel_ipu4_isys *isys)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 6, 0)
 	isys->media_dev.link_notify = intel_ipu4_pipeline_link_notify,
 #else
-	isys->media_dev.link_notify = v4l2_pipeline_link_notify,
+	isys->media_dev.ops = v4l2_pipeline_link_notify,
 #endif
 #endif /* ! MEDIA_IOC_REQUEST_CMD */
 	strlcpy(isys->media_dev.model,

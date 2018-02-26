@@ -102,7 +102,7 @@ struct intel_ipu4_isys_pipeline {
 	unsigned int vc;
 	unsigned int stream_id;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 5, 0)
-	struct media_entity_graph graph;
+	struct media_graph graph;
 #endif
 	struct media_entity_enum entity_enum;
 };
