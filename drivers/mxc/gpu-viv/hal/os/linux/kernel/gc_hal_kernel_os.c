@@ -55,6 +55,7 @@
 
 #include "gc_hal_kernel_linux.h"
 
+#include <linux/sched/signal.h>
 #include <linux/pagemap.h>
 #include <linux/seq_file.h>
 #include <linux/mman.h>
