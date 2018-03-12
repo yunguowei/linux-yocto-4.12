@@ -62,6 +62,7 @@
 
 #include <linux/platform_device.h>
 #include <linux/component.h>
+#include <linux/uaccess.h>
 
 /* Zone used for header/footer. */
 #define _GC_OBJ_ZONE    gcvZONE_DRIVER
