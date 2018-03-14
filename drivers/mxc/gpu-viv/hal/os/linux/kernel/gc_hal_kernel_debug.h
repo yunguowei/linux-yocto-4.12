@@ -60,6 +60,7 @@
 #include <linux/spinlock.h>
 #include <linux/time.h>
 #include <stdarg.h>
+#include <linux/nmi.h>
 
 #ifdef __cplusplus
 extern "C" {
